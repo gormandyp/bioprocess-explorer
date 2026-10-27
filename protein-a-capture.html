@@ -125,6 +125,8 @@ header.app::after{
 .step.soon{border-style:dashed; opacity:.75}
 .process .arrow{color:var(--line); font-size:13px; padding:0 1px}
 .process .note{font-size:11.5px; color:var(--muted); margin-left:auto}
+a.step{text-decoration:none; color:var(--muted)}
+a.step:hover{border-color:var(--accent); color:var(--accent-ink)}
 
 /* ---------- control strip ---------- */
 .controls{
@@ -494,13 +496,13 @@ globalThis.PAX = {MW_IGG, SOURCES, RESINS, DE_FIT, DEFAULTS, CHECKS,
 
 <nav class="process" aria-label="Antibody process steps">
   <span class="ctl-label">Antibody plant</span>
-  <span class="step soon"><span class="n">1</span>Bioreactor</span><span class="arrow">&rarr;</span>
+  <a class="step" href="bioreactor.html"><span class="n">1</span>Bioreactor</a><span class="arrow">&rarr;</span>
   <span class="step soon"><span class="n">2</span>Harvest</span><span class="arrow">&rarr;</span>
   <span class="step on" aria-current="page"><span class="n">3</span>Protein A capture</span><span class="arrow">&rarr;</span>
   <span class="step soon"><span class="n">4</span>Low-pH viral inactivation</span><span class="arrow">&rarr;</span>
   <span class="step soon"><span class="n">5</span>Polishing</span><span class="arrow">&rarr;</span>
   <span class="step soon"><span class="n">6</span>UF/DF</span>
-  <span class="note">Dashed steps are planned. This page is milestone 1.</span>
+  <span class="note">Solid steps are built. Dashed steps are planned.</span>
 </nav>
 
 <div class="controls">
@@ -1026,6 +1028,11 @@ function applyTheme(t){
 }
 
 /* ---------- wire up ---------- */
+/* a titer sent from the Bioreactor page arrives as ?C0=<g/L> */
+try{
+  const c0=parseFloat(new URLSearchParams(location.search).get('C0'));
+  if(isFinite(c0)) state.C0=Math.min(10, Math.max(1, Math.round(c0*10)/10));
+}catch(e){}
 buildResins(); syncSliders(); bindSliders(); buildRefs();
 $('#btn-reset').onclick=()=>{ Object.assign(state, DEFAULTS); syncSliders(); update(); };
 $('#btn-pin').onclick=()=>{

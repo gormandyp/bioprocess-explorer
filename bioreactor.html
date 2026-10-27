@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bioreactor</title>
+<meta name="description" content="Interactive CHO-cell bioreactor: Monod growth on glucose, oxygen transfer (kLa), antibody production, and the real IgG1 made in CHO cells (PDB 1HZH). Part of Bioprocess Explorer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@600;700&family=Saira:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#EFF3F6; --paper2:#F7F9FB;
+  --panel:#FFFFFF; --panel2:#F6F9FB; --panel3:#ECF2F6;
+  --ink:#13202B; --ink2:#33475A; --muted:#64798B;
+  --line:#D5E0E8; --line2:#E7EEF3; --grid:#C9D8E2;
+  --accent:#0B5FA5; --accent-ink:#08487E; --accent-soft:#E3EEF9; --accent-line:#A7C8E6;
+  --accent2:#B5446E; --accent2-soft:#F8E6EE;
+  --good:#0F6B41; --good-soft:#DEF1E7; --good-line:#9AD2B6;
+  --warn:#965C06; --warn-soft:#FAEEDA; --warn-line:#E2C489;
+  --bad:#AA1F14; --bad-soft:#FCE7E4; --bad-line:#EDB4AC;
+  /* molecule colors (read by the 3D viewer too) */
+  --mol-fc:#5B8FC7; --mol-pa:#D9822B; --mol-if:#13202B; --mol-his:#B5446E; --mol-gly:#3E9B6E;
+  --shadow-sm:0 1px 2px rgba(16,32,45,.07);
+  --shadow:0 1px 2px rgba(16,32,45,.05), 0 8px 20px -8px rgba(16,32,45,.16);
+  --focus:#0B5FA5; --r:14px; --r-sm:9px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1219; --paper2:#0E1720;
+    --panel:#141F29; --panel2:#111A23; --panel3:#1A2733;
+    --ink:#E4EDF4; --ink2:#BCCCD9; --muted:#8CA0B0;
+    --line:#2A3945; --line2:#1F2C37; --grid:#1D2A36;
+    --accent:#5DA8E0; --accent-ink:#93C6EC; --accent-soft:#10304A; --accent-line:#2B587D;
+    --accent2:#E28AAE; --accent2-soft:#3A1A28;
+    --good:#4FBE82; --good-soft:#0F3522; --good-line:#1F6440;
+    --warn:#E0A44E; --warn-soft:#392A10; --warn-line:#6E5423;
+    --bad:#E77E75; --bad-soft:#421D1A; --bad-line:#79352E;
+    --mol-fc:#7FB0E3; --mol-pa:#F0A050; --mol-if:#E4EDF4; --mol-his:#F08DB5; --mol-gly:#5CC48F;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px -8px rgba(0,0,0,.6);
+    --focus:#5DA8E0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1219; --paper2:#0E1720;
+  --panel:#141F29; --panel2:#111A23; --panel3:#1A2733;
+  --ink:#E4EDF4; --ink2:#BCCCD9; --muted:#8CA0B0;
+  --line:#2A3945; --line2:#1F2C37; --grid:#1D2A36;
+  --accent:#5DA8E0; --accent-ink:#93C6EC; --accent-soft:#10304A; --accent-line:#2B587D;
+  --accent2:#E28AAE; --accent2-soft:#3A1A28;
+  --good:#4FBE82; --good-soft:#0F3522; --good-line:#1F6440;
+  --warn:#E0A44E; --warn-soft:#392A10; --warn-line:#6E5423;
+  --bad:#E77E75; --bad-soft:#421D1A; --bad-line:#79352E;
+  --mol-fc:#7FB0E3; --mol-pa:#F0A050; --mol-if:#E4EDF4; --mol-his:#F08DB5; --mol-gly:#5CC48F;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px -8px rgba(0,0,0,.6);
+  --focus:#5DA8E0;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--paper);
+  background-image:linear-gradient(180deg,var(--paper2) 0,var(--paper) 320px);
+  background-attachment:fixed;
+  color:var(--ink); margin:0;
+  font-family:"Saira",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14.5px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+h1,h2,h3{font-family:"Saira Semi Condensed","Saira",system-ui,sans-serif; text-wrap:balance; margin:0}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:5px}
+input{font:inherit; color:inherit}
+a{color:var(--accent-ink)}
+sub,sup{font-size:.72em}
+
+/* ---------- header ---------- */
+header.app{
+  position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px;
+  padding:15px 24px 13px; background:var(--panel); border-bottom:1px solid var(--line);
+}
+header.app::after{
+  content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--mol-pa) 55%,var(--accent2) 100%); opacity:.85;
+}
+.brand{display:flex; align-items:center; gap:12px}
+.brand .mark-bg{fill:var(--accent-soft); stroke:var(--accent)}
+.brand .mark-fg{stroke:var(--accent)}
+.brand .mark-ac{fill:var(--mol-pa)}
+.brand h1{font-size:22px; font-weight:700; letter-spacing:.005em; line-height:1.1}
+.brand .title-row{display:flex; align-items:baseline; gap:9px; flex-wrap:wrap}
+.brand .by{font-size:12px; color:var(--muted); white-space:nowrap}
+.brand .sub{font-size:11.5px; color:var(--muted); letter-spacing:.045em}
+.h-spacer{flex:1}
+.h-actions{display:flex; gap:8px; align-items:center}
+.btn{
+  border:1px solid var(--line); border-radius:9px; padding:6.5px 14px;
+  background:var(--panel); font-weight:500; font-size:13.5px; box-shadow:var(--shadow-sm);
+  transition:border-color .15s, background .15s, color .15s, transform .1s;
+}
+.btn:hover{border-color:var(--accent); color:var(--accent-ink)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0A1620}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn.primary{color:#0A1620} }
+.btn.icon{padding:6.5px 9px; line-height:1; font-size:15px}
+.btn.small{padding:4px 10px; font-size:12.5px}
+
+/* ---------- process strip ---------- */
+.process{
+  display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+  padding:10px 24px; background:var(--panel2); border-bottom:1px solid var(--line);
+}
+.process .ctl-label{margin-right:8px}
+.step{
+  display:inline-flex; align-items:center; gap:7px; padding:5px 12px; border-radius:999px;
+  border:1px solid var(--line); background:var(--panel); font-size:12.8px; font-weight:500; color:var(--muted);
+}
+.step .n{font-family:"IBM Plex Mono",monospace; font-size:10.5px; opacity:.8}
+.step.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.step.soon{border-style:dashed; opacity:.75}
+.process .arrow{color:var(--line); font-size:13px; padding:0 1px}
+.process .note{font-size:11.5px; color:var(--muted); margin-left:auto}
+
+/* ---------- control strip ---------- */
+.controls{
+  display:flex; flex-direction:column; gap:10px; padding:12px 24px 14px;
+  border-bottom:1px solid var(--line); background:var(--panel2);
+}
+.ctl-row{display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center}
+.ctl-group{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.ctl-label{font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:2px}
+.chip{
+  display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px;
+  padding:4.5px 13px; font-size:13px; font-weight:500; background:var(--panel);
+  transition:border-color .15s, background .15s, color .15s;
+}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.chip .formula{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted)}
+.chip.on .formula{color:var(--accent-ink); opacity:.8}
+.chip.custom{border-style:dashed}
+.sliders{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px 18px}
+.sl{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px 9px;
+  box-shadow:var(--shadow-sm); min-width:0;
+}
+.sl .top{display:flex; align-items:baseline; gap:8px}
+.sl label{font-size:12.5px; font-weight:600}
+.sl .val{margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--accent-ink); white-space:nowrap}
+.sl .alt{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); display:block; text-align:right; min-height:15px}
+.sl input[type=range]{width:100%; accent-color:var(--accent); margin:4px 0 0}
+.sl .hint{font-size:11px; color:var(--muted)}
+details.adv{font-size:12.5px}
+details.adv summary{cursor:pointer; color:var(--muted); font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase}
+details.adv .sliders{margin-top:9px}
+
+/* ---------- layout ---------- */
+main{
+  display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:16px;
+  padding:18px 24px 34px; max-width:1500px; margin:0 auto; align-items:start;
+}
+.col{display:flex; flex-direction:column; gap:16px; min-width:0}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+.card-h{
+  display:flex; align-items:center; gap:10px; padding:11px 16px; border-bottom:1px solid var(--line2);
+  background:linear-gradient(180deg,var(--panel2),var(--panel)); flex-wrap:wrap;
+}
+.card-h h2{font-size:12.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.card-h .right{margin-left:auto; display:flex; gap:10px; align-items:center; font-size:11.5px; color:var(--muted); flex-wrap:wrap}
+.card-b{padding:12px 16px 14px}
+.two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px}
+
+/* ---------- molecule viewer ---------- */
+.mol-wrap{display:grid; grid-template-columns:minmax(0,1fr) 250px; min-height:400px}
+.viewer{
+  position:relative; min-height:400px; background-color:var(--panel2);
+  background-image:radial-gradient(var(--grid) 1.1px, transparent 1.1px); background-size:19px 19px;
+}
+.viewer .msg{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; color:var(--muted); font-size:13px}
+.viewer .occ{
+  position:absolute; left:12px; bottom:12px; z-index:5; background:var(--panel); border:1px solid var(--line);
+  border-radius:9px; padding:7px 11px; font-size:12px; box-shadow:var(--shadow-sm); max-width:280px; pointer-events:none;
+}
+.viewer .occ b{font-family:"IBM Plex Mono",monospace; color:var(--accent-ink)}
+.occbar{height:5px; border-radius:3px; background:var(--line2); margin-top:5px; overflow:hidden}
+.occbar i{display:block; height:100%; background:var(--mol-pa); border-radius:3px; transition:width .25s}
+.mol-side{border-left:1px solid var(--line2); padding:12px 14px; display:flex; flex-direction:column; gap:10px; font-size:13px}
+.legend-mol{display:flex; flex-direction:column; gap:6px}
+.legend-mol > span{display:flex; align-items:center; gap:8px}
+.legend-mol i{width:12px; height:12px; border-radius:3px; flex:none}
+.toggles{display:flex; flex-direction:column; gap:5px}
+.toggles label{display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer}
+.toggles input{accent-color:var(--accent)}
+.picked{font-size:12.5px; color:var(--ink2); background:var(--panel2); border:1px solid var(--line2); border-radius:8px; padding:7px 9px; min-height:52px}
+.picked b{font-family:"IBM Plex Mono",monospace}
+.side-h{font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.caption{font-size:12.5px; color:var(--muted); padding:9px 16px 11px; border-top:1px solid var(--line2); line-height:1.55}
+
+/* ---------- plots ---------- */
+.plot{position:relative; padding:8px 8px 4px}
+.plot svg{display:block; width:100%; height:auto}
+.plot .ax{stroke:var(--muted); stroke-width:1}
+.plot .gl{stroke:var(--line2); stroke-width:1}
+.plot .tk{font-family:"IBM Plex Mono",monospace; font-size:10.5px; fill:var(--muted)}
+.plot .al{font-family:"Saira",sans-serif; font-size:11.5px; fill:var(--ink2)}
+.plot .s-main{fill:none; stroke:var(--accent); stroke-width:2.2; stroke-linejoin:round; stroke-linecap:round}
+.plot .s-pin{fill:none; stroke:var(--muted); stroke-width:2; stroke-dasharray:5 4}
+.plot .s-ref{fill:none; stroke:var(--muted); stroke-width:1; stroke-dasharray:3 4}
+.plot .area{fill:var(--accent-soft); opacity:.7}
+.plot .mk{fill:var(--accent); stroke:var(--panel); stroke-width:2}
+.plot .mk2{fill:var(--mol-pa); stroke:var(--panel); stroke-width:2}
+.plot .lbl{font-family:"IBM Plex Mono",monospace; font-size:10.5px; fill:var(--ink2)}
+.plot .cross{stroke:var(--muted); stroke-width:1; stroke-dasharray:2 3}
+.tip{
+  position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  padding:6px 9px; font-size:12px; box-shadow:var(--shadow); white-space:nowrap; z-index:10; display:none
+}
+.tip b{font-family:"IBM Plex Mono",monospace; font-weight:500}
+.plot-legend{display:flex; gap:14px; align-items:center; font-size:11.5px; color:var(--muted)}
+.plot-legend span{display:inline-flex; align-items:center; gap:5px}
+.plot-legend i{display:inline-block; width:18px; border-top:2.2px solid var(--accent)}
+.plot-legend i.pin{border-top:2px dashed var(--muted)}
+
+/* ---------- results ---------- */
+.status{display:flex; gap:11px; padding:12px 16px; align-items:flex-start; border-bottom:1px solid var(--line2); font-size:13.5px}
+.status .dot{width:10px; height:10px; border-radius:50%; margin-top:5px; flex:none}
+.status.ok{background:var(--good-soft)} .status.ok .dot{background:var(--good)}
+.status.warn{background:var(--warn-soft)} .status.warn .dot{background:var(--warn)}
+.status .why{font-size:12.3px; color:var(--muted); margin-top:2px}
+.tiles{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line2)}
+.tile{background:var(--panel); padding:11px 16px 12px}
+.tile .k{font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted)}
+.tile .v{font-family:"IBM Plex Mono",monospace; font-size:21px; font-weight:500; margin-top:2px; font-variant-numeric:tabular-nums}
+.tile .v small{font-size:11.5px; color:var(--muted); font-weight:400; margin-left:4px}
+.tile .d{font-size:11.8px; color:var(--muted)}
+.tile.hero .v{color:var(--accent-ink)}
+table.t{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
+table.t th{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); text-align:left; font-weight:600; padding:4px 8px 5px 0; border-bottom:1px solid var(--line2)}
+table.t td{padding:5px 8px 5px 0; font-size:12.8px; border-bottom:1px solid var(--line2); vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t td.num, table.t th.num{text-align:right; font-family:"IBM Plex Mono",monospace; white-space:nowrap}
+table.t td .d{color:var(--muted); font-size:11.5px}
+.pill{display:inline-block; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:600; letter-spacing:.04em; white-space:nowrap}
+.pill.fit{background:var(--accent-soft); color:var(--accent-ink)}
+.pill.chk{background:var(--good-soft); color:var(--good)}
+.pill.asm{background:var(--warn-soft); color:var(--warn)}
+.pill.lit{background:var(--panel3); color:var(--ink2)}
+
+/* ---------- how it's modeled ---------- */
+.steps{counter-reset:st; padding:6px 16px 12px}
+.st{display:grid; grid-template-columns:26px minmax(0,1fr); gap:10px; padding:10px 0; border-bottom:1px solid var(--line2)}
+.st:last-child{border-bottom:none}
+.st::before{
+  counter-increment:st; content:counter(st); width:24px; height:24px; border-radius:50%;
+  background:var(--accent-soft); color:var(--accent-ink); font-weight:600; font-size:12px; display:flex; align-items:center; justify-content:center;
+}
+.st h3{font-size:14.5px; margin-bottom:3px}
+.st p{margin:4px 0; font-size:13.3px; color:var(--ink2)}
+.eq{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; background:var(--panel2); border:1px solid var(--line2);
+  border-radius:8px; padding:8px 11px; margin:6px 0; overflow-x:auto; white-space:nowrap; color:var(--ink)
+}
+.eq .live{color:var(--accent-ink); font-weight:600}
+details.explain{border-top:1px solid var(--line2); padding:0 16px}
+details.explain summary{cursor:pointer; padding:10px 0; font-weight:600; font-size:13.3px; color:var(--ink2); list-style:none}
+details.explain summary::before{content:"\25B8"; display:inline-block; width:15px; color:var(--muted); transition:transform .15s}
+details.explain[open] summary::before{transform:rotate(90deg)}
+details.explain summary::-webkit-details-marker{display:none}
+details.explain .body{padding:0 0 12px 15px; font-size:13.2px; color:var(--ink2)}
+details.explain .body p{margin:0 0 8px}
+dl.gloss{margin:0; display:grid; grid-template-columns:auto minmax(0,1fr); gap:5px 12px; font-size:13px}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0; color:var(--ink2)}
+ol.refs{margin:0; padding-left:20px; font-size:12.5px; color:var(--ink2)}
+ol.refs li{margin-bottom:6px}
+
+footer.app{
+  max-width:1500px; margin:0 auto; padding:0 24px 34px; display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px;
+  font-size:12.5px; color:var(--muted); line-height:1.6;
+}
+footer.app .credit{font-size:13.5px; color:var(--ink2)}
+footer.app .credit b{color:var(--ink); font-weight:600}
+footer.app .fspacer{flex:1}
+
+@media (max-width:1120px){
+  /* one column: show results right after the plots instead of after the long explainer */
+  main{display:flex; flex-direction:column}
+  .col{display:contents}
+  .o1{order:1} .o2{order:2} .o3{order:3} .o4{order:4} .o5{order:5} .o6{order:6} .o7{order:7}
+  .sliders{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .two{grid-template-columns:minmax(0,1fr)}
+  .mol-wrap{grid-template-columns:minmax(0,1fr)}
+  .mol-side{border-left:none; border-top:1px solid var(--line2)}
+  .viewer{min-height:330px}
+  header.app,.process,.controls{padding-left:16px; padding-right:16px}
+  main{padding:14px 16px 28px}
+  footer.app{padding:0 16px 28px}
+  .process .note{margin-left:0; width:100%}
+}
+@media (max-width:520px){
+  .sliders{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:minmax(0,1fr)}
+}
+/* ---------- page 2 additions ---------- */
+:root{ --mol-hc:#5B8FC7; --mol-hc2:#3F6FA6; --mol-lc:#9B7BC8; --mol-fc:#D9822B; }
+:root[data-theme="dark"]{ --mol-hc:#7FB0E3; --mol-hc2:#5C93CF; --mol-lc:#B9A0E6; --mol-fc:#F0A050; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --mol-hc:#7FB0E3; --mol-hc2:#5C93CF; --mol-lc:#B9A0E6; --mol-fc:#F0A050; } }
+a.step{text-decoration:none; color:var(--muted)}
+a.step:hover{border-color:var(--accent); color:var(--accent-ink)}
+.multi{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0}
+.multi .plot{border-top:1px solid var(--line2)}
+.multi .plot:nth-child(odd){border-right:1px solid var(--line2)}
+.multi .ph{font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:8px 12px 0}
+.plot .s-o2{fill:none; stroke:var(--accent2); stroke-width:2.2}
+.plot .s-glc{fill:none; stroke:var(--mol-fc); stroke-width:2.2}
+.plot .s-p{fill:none; stroke:var(--good); stroke-width:2.2}
+.budget{padding:12px 16px 14px; font-size:13px; color:var(--ink2)}
+.bar{height:10px; border-radius:5px; background:var(--line2); margin:6px 0 4px; position:relative; overflow:hidden}
+.bar i{position:absolute; left:0; top:0; bottom:0; border-radius:5px; background:var(--accent)}
+.bar i.over{background:var(--bad)}
+.bar-l{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); font-family:"IBM Plex Mono",monospace}
+.send{display:flex; gap:10px; align-items:center; padding:10px 16px 12px; border-top:1px solid var(--line2); flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+.send a.btn{text-decoration:none}
+@media (max-width:760px){ .multi{grid-template-columns:minmax(0,1fr)} .multi .plot:nth-child(odd){border-right:none} }
+</style>
+</head>
+<body>
+<script>
+'use strict';
+/* ============ model engine (no DOM; loaded by test/bioreactor.test.js) ============ */
+(function(){
+const MW_IGG = 150000;        // g/mol
+const AVOGADRO = 6.02214076e23;
+
+const SOURCES = {
+  pdb:     {short:'Saphire et al. 2001 (PDB 1HZH)', cite:'Saphire E.O. et al. Crystal structure of a neutralizing human IgG against HIV-1: a template for vaccine design. Science 293:1155–1159 (2001). PDB 1HZH: intact human IgG1 b12, expressed in Chinese hamster (CHO) cells, X-ray 2.7 Å.', url:'https://www.rcsb.org/structure/1HZH'},
+  ihling:  {short:'Ihling et al. 2021', cite:'Ihling N. et al. Time-resolved monitoring of the oxygen transfer rate of Chinese hamster ovary cells provides insights into culture behavior in shake flasks. Front. Bioeng. Biotechnol. 9:725498 (2021). CHO doubling time about 20 h; shake-flask kLa 8–42 h⁻¹; O₂ solubility about 0.22 mM at 36.5 °C.', url:'https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2021.725498/full'},
+  chaudhry:{short:'Chaudhry 2024 (BioProcess Intl.)', cite:'Chaudhry M.A. Lessons in bioreactor scale-up, part 3: experimental determination and application of oxygen mass-transfer rate, mass-transfer coefficient, and oxygen-uptake rate. BioProcess International (Sept 2024). CHO qO₂ 2–8 × 10⁻¹⁰ mmol/cell/h; C* about 0.21 mM at 37 °C in air.', url:'https://www.bioprocessintl.com/bioreactors/lessons-in-bioreactor-scale-up-part-3-experimental-determination-and-application-of-oxygen-mass--transfer-rate-mass-transfer-coefficient-and-oxygen-uptake-rate'},
+  kunert:  {short:'Kunert & Reinhart 2016', cite:'Kunert R., Reinhart D. Advances in recombinant antibody manufacturing. Appl. Microbiol. Biotechnol. 100:3451–3461 (2016). CHO batch titers about 1 g/L (1–10 g/L fed-batch); older processes peaked near 3 × 10⁶ cells/mL and ran about a week in batch.', url:'https://link.springer.com/article/10.1007/s00253-016-7388-9'},
+  lopez:   {short:'López-Meza et al. 2016', cite:'López-Meza J. et al. Using simple models to describe the kinetics of growth, glucose consumption, and monoclonal antibody formation in naive and infliximab producer CHO cells. Cytotechnology (2016). Shake flasks at 1.2–4.8 g/L glucose; Y_X/S 0.72–2.79 × 10⁶ cells/mL (recombinant line); Luedeking–Piret α = 7.65 × 10⁻⁷ µg/cell, β = 7.68 × 10⁻⁸ µg/cell/h. Read from the abstract; journal volume not re-checked.', url:'https://pubmed.ncbi.nlm.nih.gov/26091615/'},
+  zalai:   {short:'Zalai et al. 2016', cite:'Zalai D. et al. A control strategy to investigate the relationship between specific productivity and high-mannose glycoforms in CHO cells. Appl. Microbiol. Biotechnol. 100:7011–7024 (2016). 1 L bioreactor seeded at 0.5 × 10⁶ cells/mL, 37 °C, DO 40% of air saturation.', url:'https://link.springer.com/article/10.1007/s00253-016-7380-4'},
+  assume:  {short:'Assumption', cite:'A typical value chosen for this page, not measured. Change it in Advanced to see how much it matters.', url:''},
+  fit:     {short:'Fitted on this page', cite:'Chosen so the default 7-day batch reaches 1 g/L, the typical CHO batch titer in Kunert & Reinhart 2016. See test/bioreactor.test.js.', url:''},
+};
+
+/* Productivity of the default clone, fitted: 7-day batch at the defaults gives 1.0 g/L. Re-derive with fitBeta(). */
+const BETA_FIT = 3.08e-6;     // µg antibody per cell per hour (= 73.9 pg/cell/day)
+
+const CLONES = {
+  industrial: {name:'Production-style clone', alpha:0,       beta:BETA_FIT, src:'fit'},
+  research:   {name:'Research clone (López-Meza)', alpha:7.65e-7, beta:7.68e-8, src:'lopez'},
+};
+
+const DEFAULTS = {
+  clone:'industrial', alpha:0, beta:BETA_FIT,
+  muMax: Math.LN2/20,  // 1/h, from a 20 h doubling time
+  Ks: 0.1,             // g/L glucose, assumed
+  KO2: 0.005,          // mM, assumed (about 2% of air saturation)
+  kd0: 0.002,          // 1/h background death, assumed
+  kdStarve: 0.02,      // 1/h extra death once glucose runs out, assumed
+  Yxs: 1.0,            // 1e6 cells/mL per g/L glucose, inside López-Meza range
+  qO2: 4e-10,          // mmol O2 per cell per hour, mid of Chaudhry range
+  kLa: 10,             // 1/h, inside Ihling shake-flask range
+  Cstar: 0.21,         // mM O2 at air saturation, 37 °C
+  X0: 0.5,             // 1e6 cells/mL, Zalai seeding
+  S0: 4.5,             // g/L glucose, top of López-Meza range
+  days: 7,
+};
+
+/* Published numbers the model is compared with */
+const CHECKS = [
+  {id:'titer', label:'Batch titer, about 1 g/L', key:'titer', value:1.0, unit:'g/L', kind:'fit', src:'kunert'},
+  {id:'peak',  label:'Peak cells, older batch processes', key:'peakX', value:3.0, unit:'10⁶/mL', kind:'context', src:'kunert'},
+  {id:'td',    label:'Doubling time', key:'td', value:20, unit:'h', kind:'input', src:'ihling'},
+];
+
+/* units: t h · X 1e6 cells/mL · S g/L glucose · C mM dissolved O2 · P g/L antibody */
+function rates(p, y){
+  const X=y[0], S=y[1], C=y[2];
+  const fS = S>0 ? S/(p.Ks+S) : 0;          // Monod term for glucose
+  const fO = C>0 ? C/(p.KO2+C) : 0;         // Monod term for oxygen
+  const mu = p.muMax*fS*fO;                 // growth rate, 1/h
+  const kd = p.kd0 + p.kdStarve*(1-fS);     // death rate, 1/h
+  const our = p.qO2*X*1e9;                  // mmol/cell/h × (1e6 cells/mL × 1e3 mL/L) = mmol/L/h
+  const otr = p.kLa*(p.Cstar-C);            // mmol/L/h
+  return {mu, kd, our, otr, d:[
+    (mu-kd)*X,
+    -mu*X/p.Yxs,
+    otr - our,
+    (p.alpha*mu*X + p.beta*X)*1e3,          // µg/cell × 1e6 cells/mL = µg/mL = mg/L; ×1e3/1e6 -> g/L
+  ]};
+}
+
+/* classic RK4; the time step is kept well under 1/kLa so the fast oxygen balance stays stable */
+function simulate(p, opt){
+  opt = opt||{};
+  const T = p.days*24, dt0 = opt.dt || Math.min(0.1, 0.2/p.kLa);
+  const n = Math.ceil(T/dt0), dt = T/n, every = Math.max(1, Math.floor(n/600));
+  let y = [p.X0, p.S0, p.C0===undefined ? p.Cstar : p.C0, 0], intX = 0;
+  const r0 = rates(p, y);
+  const out = {t:[0], X:[y[0]], S:[y[1]], C:[y[2]], P:[0], mu:[r0.mu], our:[r0.our]};
+  const step = (a, b, h)=>[a[0]+h*b[0], a[1]+h*b[1], a[2]+h*b[2], a[3]+h*b[3]];
+  for(let s=0; s<n; s++){
+    const k1=rates(p,y).d, k2=rates(p,step(y,k1,dt/2)).d, k3=rates(p,step(y,k2,dt/2)).d, k4=rates(p,step(y,k3,dt)).d;
+    const yn=[0,1,2,3].map(i=>y[i]+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+    intX += dt/2*(y[0]+yn[0]);
+    y = yn.map(v=>v<0?0:v);
+    if((s+1)%every===0 || s===n-1){
+      const r=rates(p,y);
+      out.t.push((s+1)*dt); out.X.push(y[0]); out.S.push(y[1]); out.C.push(y[2]); out.P.push(y[3]); out.mu.push(r.mu); out.our.push(r.our);
+    }
+  }
+  out.intX = intX; out.dt = dt;
+  return out;
+}
+
+function analyze(p, opt){
+  const sim = simulate(p, opt);
+  let iPeak=0; for(let i=1;i<sim.X.length;i++) if(sim.X[i]>sim.X[iPeak]) iPeak=i;
+  let iMinC=0; for(let i=1;i<sim.C.length;i++) if(sim.C[i]<sim.C[iMinC]) iMinC=i;
+  let tGlcOut=NaN; for(let i=0;i<sim.S.length;i++) if(sim.S[i]<0.05*p.S0){ tGlcOut=sim.t[i]; break; }
+  let tLowDO=NaN; for(let i=0;i<sim.C.length;i++) if(sim.C[i]<0.1*p.Cstar){ tLowDO=sim.t[i]; break; }
+  const otrMax = p.kLa*p.Cstar;                     // mmol/L/h, with the liquid at zero O2
+  const xO2 = otrMax/(p.qO2*1e9);                   // 1e6 cells/mL the bubbles can feed
+  const qpPgDay = p.beta*1e6*24;                    // µg/cell/h -> pg/cell/day
+  const moleculesPerSec = p.beta*1e-6/MW_IGG*AVOGADRO/3600;   // g/cell/h -> molecules/cell/s
+  return {
+    sim, peakX:sim.X[iPeak], tPeak:sim.t[iPeak], titer:sim.P[sim.P.length-1],
+    minDO:sim.C[iMinC]/p.Cstar, tMinDO:sim.t[iMinC], tGlcOut, tLowDO,
+    otrMax, xO2, peakOUR:Math.max(...sim.our), qpPgDay, moleculesPerSec,
+    td: Math.LN2/(p.muMax*p.S0/(p.Ks+p.S0)*p.Cstar/(p.KO2+p.Cstar)),
+    viableEnd: sim.X[sim.X.length-1],
+  };
+}
+
+/* find beta so the batch reaches a target titer: titer is linear in beta when alpha = 0 */
+function fitBeta(p, target){
+  const r = simulate(Object.assign({}, p, {alpha:0, beta:0}));
+  return target/(r.intX*1e3);
+}
+
+globalThis.BRX = {MW_IGG, AVOGADRO, SOURCES, CLONES, DEFAULTS, CHECKS, BETA_FIT, rates, simulate, analyze, fitBeta};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>
+
+<header class="app">
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+      <rect class="mark-bg" x="1.5" y="1.5" width="37" height="37" rx="10" stroke-width="1.5"/>
+      <path class="mark-fg" d="M12 9 H28 V27 a8 6 0 0 1 -16 0 Z" fill="none" stroke-width="1.6" stroke-linejoin="round"/>
+      <path class="mark-fg" d="M20 6 V24 M15 24 H25" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <circle class="mark-ac" cx="16" cy="29" r="1.6"/><circle class="mark-ac" cx="23.5" cy="27" r="1.3"/><circle class="mark-ac" cx="19" cy="18" r="1.1" opacity=".6"/>
+    </svg>
+    <div>
+      <div class="title-row"><h1>Bioreactor</h1><span class="by">Bioprocess Explorer &middot; step 1</span></div>
+      <div class="sub">CHO batch culture &middot; Monod growth &middot; oxygen transfer (k<sub>L</sub>a) &middot; PDB 1HZH</div>
+    </div>
+  </div>
+  <div class="h-spacer"></div>
+  <div class="h-actions">
+    <button class="btn icon" id="btn-theme" title="Switch theme" aria-label="Switch theme">&#9681;</button>
+    <button class="btn" id="btn-pin">Pin run</button>
+    <button class="btn primary" id="btn-reset">Reset</button>
+  </div>
+</header>
+
+<nav class="process" aria-label="Antibody process steps">
+  <span class="ctl-label">Antibody plant</span>
+  <span class="step on" aria-current="page"><span class="n">1</span>Bioreactor</span><span class="arrow">&rarr;</span>
+  <span class="step soon"><span class="n">2</span>Harvest</span><span class="arrow">&rarr;</span>
+  <a class="step" href="protein-a-capture.html"><span class="n">3</span>Protein A capture</a><span class="arrow">&rarr;</span>
+  <span class="step soon"><span class="n">4</span>Low-pH viral inactivation</span><span class="arrow">&rarr;</span>
+  <span class="step soon"><span class="n">5</span>Polishing</span><span class="arrow">&rarr;</span>
+  <span class="step soon"><span class="n">6</span>UF/DF</span>
+  <span class="note">Solid steps are built. Dashed steps are planned.</span>
+</nav>
+
+<div class="controls">
+  <div class="ctl-row">
+    <div class="ctl-group" id="clone-group"><span class="ctl-label">Cell line</span></div>
+  </div>
+  <div class="sliders">
+    <div class="sl">
+      <div class="top"><label for="s-kla">k<sub>L</sub>a oxygen transfer</label><span class="val" id="v-kla"></span></div>
+      <input type="range" id="s-kla" min="1" max="40" step="0.5">
+      <span class="alt">per hour &middot; more stirring or air = higher</span>
+    </div>
+    <div class="sl">
+      <div class="top"><label for="s-s0">Starting glucose</label><span class="val" id="v-s0"></span></div>
+      <input type="range" id="s-s0" min="1" max="10" step="0.1">
+      <span class="alt" id="a-s0"></span>
+    </div>
+    <div class="sl">
+      <div class="top"><label for="s-x0">Seed density</label><span class="val" id="v-x0"></span></div>
+      <input type="range" id="s-x0" min="0.1" max="2" step="0.05">
+      <span class="alt">10&#8310; viable cells per mL at day 0</span>
+    </div>
+    <div class="sl">
+      <div class="top"><label for="s-qo2">O&#8322; use per cell</label><span class="val" id="v-qo2"></span></div>
+      <input type="range" id="s-qo2" min="2" max="8" step="0.1">
+      <span class="alt">&times;10&#8315;&sup1;&#8304; mmol/cell/h (CHO range 2&ndash;8)</span>
+    </div>
+  </div>
+  <details class="adv">
+    <summary>Advanced: growth and death</summary>
+    <div class="sliders">
+      <div class="sl">
+        <div class="top"><label for="s-td">Fastest doubling time</label><span class="val" id="v-td"></span></div>
+        <input type="range" id="s-td" min="12" max="40" step="0.5">
+        <span class="alt">sets &mu;<sub>max</sub> = ln 2 / t<sub>d</sub></span>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="s-ks">K<sub>s</sub> glucose</label><span class="val" id="v-ks"></span></div>
+        <input type="range" id="s-ks" min="0.01" max="1" step="0.01">
+        <span class="alt">g/L where growth is at half speed (assumed)</span>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="s-y">Yield Y<sub>X/S</sub></label><span class="val" id="v-y"></span></div>
+        <input type="range" id="s-y" min="0.5" max="3" step="0.05">
+        <span class="alt">10&#8310; cells/mL per g/L glucose</span>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="s-kds">Starvation death</label><span class="val" id="v-kds"></span></div>
+        <input type="range" id="s-kds" min="0" max="0.08" step="0.002">
+        <span class="alt">per hour once glucose is gone (assumed)</span>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="s-days">Run length</label><span class="val" id="v-days"></span></div>
+        <input type="range" id="s-days" min="3" max="14" step="0.5">
+        <span class="alt">batch, no feeding</span>
+      </div>
+    </div>
+  </details>
+</div>
+
+<main>
+  <div class="col left">
+    <section class="card o1">
+      <div class="card-h">
+        <h2>The product: a whole IgG1 made in CHO cells</h2>
+        <div class="right"><a href="https://www.rcsb.org/structure/1HZH" target="_blank" rel="noopener">PDB 1HZH</a><span>X-ray, 2.7 &Aring;</span></div>
+      </div>
+      <div class="mol-wrap">
+        <div class="viewer" id="viewer">
+          <div class="msg" id="viewer-msg">Loading the structure from the Protein Data Bank&hellip;</div>
+          <div class="occ" id="occ"></div>
+        </div>
+        <div class="mol-side">
+          <div class="legend-mol">
+            <span><i style="background:var(--mol-hc)"></i><span>Heavy chain 1</span></span>
+            <span><i style="background:var(--mol-hc2)"></i><span>Heavy chain 2</span></span>
+            <span><i style="background:var(--mol-lc)"></i><span>Light chains</span></span>
+            <span><i style="background:var(--mol-fc)"></i><span>Fc stem (Protein A grips here)</span></span>
+            <span><i style="background:var(--mol-gly)"></i><span>Glycans the CHO cell adds</span></span>
+          </div>
+          <div class="toggles">
+            <label><input type="checkbox" id="t-fc" checked> Highlight the Fc stem</label>
+            <label><input type="checkbox" id="t-gly" checked> Show glycans</label>
+            <label><input type="checkbox" id="t-spin"> Spin</label>
+          </div>
+          <button class="btn small" id="btn-view">Reset view</button>
+          <div>
+            <div class="side-h">Clicked residue</div>
+            <div class="picked" id="picked">Click any atom to name its residue.</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption" id="mol-caption">
+        This is the molecule the whole plant exists to make: two heavy and two light chains in a Y shape. The arms (Fab) grab the drug target; the stem (Fc) is what Protein A grabs on the next page. CHO cells are used because, like human cells, they attach sugar chains (glycans) to the Fc, which the drug needs to work properly in the body.
+      </div>
+    </section>
+
+    <section class="card o2">
+      <div class="card-h"><h2>Batch culture over time</h2><div class="right plot-legend" id="run-legend"></div></div>
+      <div class="multi">
+        <div class="plot" id="p-x"><div class="ph">Viable cells (10&#8310;/mL)</div></div>
+        <div class="plot" id="p-s"><div class="ph">Glucose (g/L)</div></div>
+        <div class="plot" id="p-c"><div class="ph">Dissolved O&#8322; (% of air saturation)</div></div>
+        <div class="plot" id="p-p"><div class="ph">Antibody titer (g/L)</div></div>
+      </div>
+    </section>
+
+    <section class="card o5">
+      <div class="card-h"><h2>How it's modeled</h2><div class="right">4 coupled ODEs &middot; RK4</div></div>
+      <div class="steps" id="steps"></div>
+      <details class="explain">
+        <summary>Parameters, units and sources</summary>
+        <div class="body"><table class="t" id="param-table"></table></div>
+      </details>
+      <details class="explain">
+        <summary>Assumptions and limits</summary>
+        <div class="body">
+          <p><b>Batch only.</b> Nothing is added after day 0. Real antibody plants run fed-batch (feeding glucose and nutrients daily) for 10&ndash;14 days, which is how they reach several g/L.</p>
+          <p><b>Glucose is the only food.</b> Real cells also run out of glutamine and make lactate and ammonia, which slow growth. Those are left out.</p>
+          <p><b>No oxygen controller.</b> Real bioreactors hold dissolved O&#8322; at a set point (often 30&ndash;50%) by adding pure oxygen. Here k<sub>L</sub>a is fixed, so you can see what happens without control.</p>
+          <p><b>One productivity number.</b> The production clone's antibody per cell per day was fitted to one published titer (1 g/L). Real productivity changes with temperature, pH and culture age.</p>
+          <p><b>Numerics.</b> RK4 with a step under 0.2/k<sub>L</sub>a hours. Tests check exact exponential growth, the yield balance, the oxygen steady state, and that halving the step changes the titer by less than 0.1%.</p>
+        </div>
+      </details>
+      <details class="explain">
+        <summary>Words used on this page</summary>
+        <div class="body">
+          <dl class="gloss">
+            <dt>CHO cells</dt><dd>Chinese hamster ovary cells. The workhorse cells for making antibody drugs.</dd>
+            <dt>Batch culture</dt><dd>Fill the tank once and let it run, like baking bread with only the dough you started with.</dd>
+            <dt>Viable cells</dt><dd>Living cells. Dead cells stop making antibody.</dd>
+            <dt>Monod equation</dt><dd>&mu; = &mu;<sub>max</sub> S/(K<sub>s</sub> + S). Growth speeds up with food, then levels off, like a buffet line that can only move so fast.</dd>
+            <dt>Doubling time</dt><dd>Time for the cell count to double: t<sub>d</sub> = ln 2 / &mu;.</dd>
+            <dt>Yield Y<sub>X/S</sub></dt><dd>Cells made per amount of glucose eaten.</dd>
+            <dt>k<sub>L</sub>a</dt><dd>Volumetric mass transfer coefficient. How fast oxygen crosses from bubbles into the liquid. Think of the width of a doorway.</dd>
+            <dt>C*</dt><dd>The most O&#8322; the liquid can hold when it is in contact with air. The "full tank" level.</dd>
+            <dt>OTR / OUR</dt><dd>Oxygen transfer rate (supply from bubbles) and oxygen uptake rate (demand from cells), both in mmol per L per hour.</dd>
+            <dt>Titer</dt><dd>Antibody concentration in the broth, g/L. The next steps purify it.</dd>
+            <dt>Luedeking&ndash;Piret</dt><dd>dP/dt = &alpha; dX/dt + &beta; X: some product comes with growth (&alpha;), some just from being alive (&beta;).</dd>
+            <dt>ODE, RK4</dt><dd>An equation for a rate of change, and a method that solves it in small steps, checking the slope four times per step.</dd>
+          </dl>
+        </div>
+      </details>
+      <details class="explain">
+        <summary>References</summary>
+        <div class="body"><ol class="refs" id="refs"></ol></div>
+      </details>
+    </section>
+  </div>
+
+  <div class="col right">
+    <section class="card o3">
+      <div class="card-h"><h2>Run results</h2><div class="right" id="res-meta"></div></div>
+      <div id="status"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="send" id="send"></div>
+    </section>
+    <section class="card o4">
+      <div class="card-h"><h2>Oxygen budget</h2><div class="right">supply vs demand</div></div>
+      <div class="budget" id="budget"></div>
+    </section>
+    <section class="card o6">
+      <div class="card-h"><h2>Check against published data</h2></div>
+      <div class="card-b"><table class="t" id="checks"></table>
+        <p style="font-size:12px; color:var(--muted); margin:8px 0 0">"Fit" was used to set a parameter; "input" is a slider value from a source; "context" is a published number the model is not expected to match exactly.</p>
+      </div>
+    </section>
+    <section class="card o7">
+      <div class="card-h"><h2>Day by day</h2><div class="right">table view of the plots</div></div>
+      <div class="card-b"><table class="t" id="day-table"></table></div>
+    </section>
+  </div>
+</main>
+
+<footer class="app">
+  <div class="credit"><b>Bioprocess Explorer</b> &mdash; built by Preston with AI assistance (Claude). Learning tool, not a design or validation tool.</div>
+  <div class="fspacer"></div>
+  <div class="note">Structure: PDB 1HZH (CC0). 3D viewer: 3Dmol.js (BSD-3). Style inspired by Balance Bench by Dr. Logan Morton.</div>
+</footer>
+
+<script>
+'use strict';
+const {SOURCES, CLONES, DEFAULTS, CHECKS, analyze} = BRX;
+const $ = s=>document.querySelector(s);
+const state = Object.assign({}, DEFAULTS);
+let pinned = null, last = null, hoverT = null;
+
+/* ---------- formatting ---------- */
+function fmt(v, d){ if(!isFinite(v)) return '—'; return v.toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d}); }
+function sig(v, n){ if(!isFinite(v)) return '—'; if(v===0) return '0'; const d=Math.max(0, n-1-Math.floor(Math.log10(Math.abs(v)))); return fmt(v, Math.min(d,6)); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function srcLink(id){ const s=SOURCES[id]; return s.url ? `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.short)}</a>` : esc(s.short); }
+function dayStr(h){ return isFinite(h) ? 'day '+fmt(h/24,1) : 'never'; }
+
+/* ---------- controls ---------- */
+function buildClones(){
+  const g=$('#clone-group');
+  for(const [id,c] of Object.entries(CLONES)){
+    const b=document.createElement('button'); b.className='chip'; b.dataset.clone=id;
+    b.innerHTML=`${esc(c.name)} <span class="formula">${fmt(c.beta*1e6*24,1)} pg/cell/day</span>`;
+    b.onclick=()=>{ state.clone=id; state.alpha=c.alpha; state.beta=c.beta; update(); };
+    g.appendChild(b);
+  }
+}
+const SL = [
+  ['#s-kla', ()=>state.kLa,                 v=>state.kLa=v],
+  ['#s-s0',  ()=>state.S0,                  v=>state.S0=v],
+  ['#s-x0',  ()=>state.X0,                  v=>state.X0=v],
+  ['#s-qo2', ()=>state.qO2*1e10,            v=>state.qO2=v*1e-10],
+  ['#s-td',  ()=>Math.LN2/state.muMax,      v=>state.muMax=Math.LN2/v],
+  ['#s-ks',  ()=>state.Ks,                  v=>state.Ks=v],
+  ['#s-y',   ()=>state.Yxs,                 v=>state.Yxs=v],
+  ['#s-kds', ()=>state.kdStarve,            v=>state.kdStarve=v],
+  ['#s-days',()=>state.days,                v=>state.days=v],
+];
+function syncSliders(){ for(const [id,get] of SL) $(id).value=get(); }
+let pending=false;
+function schedule(){ if(pending) return; pending=true; requestAnimationFrame(()=>{ pending=false; update(); }); }
+function bindSliders(){ for(const [id,,set] of SL) $(id).addEventListener('input', e=>{ set(+e.target.value); schedule(); }); }
+
+/* ---------- small-multiple plots with a shared time crosshair ---------- */
+function niceTicks(lo, hi, n){
+  const span=hi-lo||1, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0)));
+  const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=step0);
+  const t=[]; for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step) t.push(+v.toFixed(10));
+  return t;
+}
+const PW=400, PH=210, PM={l:44, r:12, t:10, b:30};
+const plots = {};
+function plot(id, cfg){
+  const el=$('#'+id), iw=PW-PM.l-PM.r, ih=PH-PM.t-PM.b;
+  const X=v=>PM.l+v/cfg.xMax*iw, Y=v=>PM.t+ih-(v-cfg.y[0])/(cfg.y[1]-cfg.y[0])*ih;
+  let s=`<svg viewBox="0 0 ${PW} ${PH}" role="img" aria-label="${esc(cfg.aria)}">`;
+  for(const t of niceTicks(cfg.y[0],cfg.y[1],4)) s+=`<line class="gl" x1="${PM.l}" x2="${PW-PM.r}" y1="${Y(t)}" y2="${Y(t)}"/><text class="tk" x="${PM.l-6}" y="${Y(t)+3.5}" text-anchor="end">${t}</text>`;
+  for(let d=0; d<=cfg.xMax/24+1e-9; d+= cfg.xMax>24*8 ? 2 : 1) s+=`<text class="tk" x="${X(d*24)}" y="${PH-PM.b+14}" text-anchor="middle">${d}</text>`;
+  s+=`<line class="ax" x1="${PM.l}" x2="${PW-PM.r}" y1="${PM.t+ih}" y2="${PM.t+ih}"/>`;
+  s+=`<text class="al" x="${PW-PM.r}" y="${PH-3}" text-anchor="end">day</text>`;
+  for(const r of (cfg.refs||[])) if(r.y>=cfg.y[0] && r.y<=cfg.y[1]) s+=`<line class="s-ref" x1="${PM.l}" x2="${PW-PM.r}" y1="${Y(r.y)}" y2="${Y(r.y)}"/><text class="lbl" x="${PW-PM.r-3}" y="${Y(r.y)-4}" text-anchor="end">${r.label}</text>`;
+  for(const se of cfg.series) s+=`<path class="${se.cls}" d="${se.pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(Math.min(Math.max(p[1],cfg.y[0]),cfg.y[1])).toFixed(1)).join('')}"/>`;
+  s+=`<line class="cross" x1="0" x2="0" y1="${PM.t}" y2="${PM.t+ih}" visibility="hidden"/><circle class="mk" r="4" visibility="hidden"/>`;
+  s+=`<rect class="hit" x="${PM.l}" y="${PM.t}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="tip"></div>`;
+  el.querySelectorAll('svg,.tip').forEach(n=>n.remove());
+  el.insertAdjacentHTML('beforeend', s);
+  plots[id]={el, cfg, X, Y, main:cfg.series[cfg.series.length-1].pts};
+  const svg=el.querySelector('svg');
+  const hit=el.querySelector('.hit');
+  hit.addEventListener('pointermove', ev=>{ const b=svg.getBoundingClientRect(); hoverT=((ev.clientX-b.left)/b.width*PW-PM.l)/iw*cfg.xMax; showCross(); });
+  hit.addEventListener('pointerleave', ()=>{ hoverT=null; showCross(); });
+}
+function showCross(){
+  for(const id in plots){
+    const P=plots[id], el=P.el, cr=el.querySelector('.cross'), dot=el.querySelector('circle.mk'), tip=el.querySelector('.tip');
+    if(hoverT===null || !P.main.length){ cr.setAttribute('visibility','hidden'); dot.setAttribute('visibility','hidden'); tip.style.display='none'; continue; }
+    let best=P.main[0]; for(const p of P.main) if(Math.abs(p[0]-hoverT)<Math.abs(best[0]-hoverT)) best=p;
+    const x=P.X(best[0]), y=P.Y(Math.min(Math.max(best[1],P.cfg.y[0]),P.cfg.y[1]));
+    cr.setAttribute('x1',x); cr.setAttribute('x2',x); cr.setAttribute('visibility','visible');
+    dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('visibility','visible');
+    tip.innerHTML=`day <b>${fmt(best[0]/24,1)}</b><br>${P.cfg.tip(best[1])}`; tip.style.display='block';
+    const b=el.querySelector('svg').getBoundingClientRect(), eb=el.getBoundingClientRect();
+    const px=x/PW*b.width+(b.left-eb.left), py=y/PH*b.height+(b.top-eb.top);
+    tip.style.left=Math.min(px+12, eb.width-tip.offsetWidth-4)+'px'; tip.style.top=Math.max(py-46, 0)+'px';
+  }
+}
+
+/* ---------- update ---------- */
+function update(){
+  const p=state, r=analyze(p); last=r;
+  document.querySelectorAll('#clone-group .chip').forEach(b=>b.classList.toggle('on', b.dataset.clone===p.clone));
+  $('#v-kla').textContent=fmt(p.kLa,1)+' h⁻¹';
+  $('#v-s0').textContent=fmt(p.S0,1)+' g/L'; $('#a-s0').textContent='= '+fmt(p.S0/180.16*1000,0)+' mM (glucose 180.16 g/mol)';
+  $('#v-x0').textContent=fmt(p.X0,2)+' ×10⁶/mL';
+  $('#v-qo2').textContent=fmt(p.qO2*1e10,1);
+  $('#v-td').textContent=fmt(Math.LN2/p.muMax,1)+' h';
+  $('#v-ks').textContent=fmt(p.Ks,2)+' g/L'; $('#v-y').textContent=fmt(p.Yxs,2); $('#v-kds').textContent=fmt(p.kdStarve,3)+' h⁻¹';
+  $('#v-days').textContent=fmt(p.days,1)+' d';
+  drawPlots(p, r); drawResults(p, r); drawBudget(p, r); drawChecks(p, r); drawDays(p, r); drawSteps(p, r); drawParams(p, r); updateOverlay(r);
+}
+
+function series(sim, key, scale){ return sim.t.map((t,i)=>[t, sim[key][i]*(scale||1)]); }
+function drawPlots(p, r){
+  const s=r.sim, xMax=p.days*24;
+  const pin=(key,scale)=> pinned && pinned.days===p.days ? [{pts:series(pinned.sim,key,scale), cls:'s-pin'}] : [];
+  const maxOf=(arr)=>Math.max(...arr);
+  const xTop=Math.max(1, maxOf(s.X), r.xO2<maxOf(s.X)*3 ? r.xO2 : 0, pinned&&pinned.days===p.days?maxOf(pinned.sim.X):0)*1.1;
+  plot('p-x', {aria:'Viable cell density over time', xMax, y:[0, +sig(xTop,2)], series:[...pin('X'), {pts:series(s,'X'), cls:'s-main'}],
+    refs:[{y:r.xO2, label:'O₂ ceiling '+fmt(r.xO2,1)}], tip:v=>`<b>${fmt(v,2)}</b> ×10⁶ cells/mL`});
+  plot('p-s', {aria:'Glucose over time', xMax, y:[0, Math.max(p.S0, pinned&&pinned.days===p.days?pinned.p.S0:0)*1.1], series:[...pin('S'), {pts:series(s,'S'), cls:'s-glc'}],
+    tip:v=>`<b>${fmt(v,2)}</b> g/L glucose`});
+  plot('p-c', {aria:'Dissolved oxygen over time', xMax, y:[0,105], series:[...pin('C',100/p.Cstar), {pts:series(s,'C',100/p.Cstar), cls:'s-o2'}],
+    refs:[{y:10, label:'10%'}], tip:v=>`<b>${fmt(v,1)}</b>% of air saturation`});
+  const pTop=Math.max(maxOf(s.P), pinned&&pinned.days===p.days?maxOf(pinned.sim.P):0)*1.15||0.01;
+  plot('p-p', {aria:'Antibody titer over time', xMax, y:[0, +sig(pTop,2)], series:[...pin('P'), {pts:series(s,'P'), cls:'s-p'}],
+    tip:v=>`<b>${sig(v,3)}</b> g/L antibody`});
+  $('#run-legend').innerHTML = pinned ? (pinned.days===p.days ? `<span><i class="pin"></i>pinned: ${esc(pinned.label)}</span><span><i></i>current</span>` : '<span>pinned run hidden: different run length</span>') : '<span>hover any plot to read all four</span>';
+  showCross();
+}
+
+function drawResults(p, r){
+  const st=$('#status');
+  if(isFinite(r.tLowDO)){
+    st.className='status warn'; st.innerHTML=`<span class="dot"></span><div><b>The cells run short of oxygen on ${dayStr(r.tLowDO)}.</b><div class="why">Dissolved O₂ falls below 10% of saturation. Raise k<sub>L</sub>a (stir harder, sparge more air) or seed fewer cells.</div></div>`;
+  } else if(isFinite(r.tGlcOut)){
+    st.className='status ok'; st.innerHTML=`<span class="dot"></span><div><b>Glucose runs out on ${dayStr(r.tGlcOut)}; oxygen keeps up.</b><div class="why">After that the cells starve and die. Fed-batch plants feed glucose here to keep going.</div></div>`;
+  } else {
+    st.className='status ok'; st.innerHTML=`<span class="dot"></span><div><b>Food and oxygen both last the whole run.</b><div class="why">Try a longer run or more seed cells to reach a limit.</div></div>`;
+  }
+  $('#tiles').innerHTML=`
+    <div class="tile hero"><div class="k">Final titer</div><div class="v">${sig(r.titer,3)}<small>g/L</small></div><div class="d">antibody in the broth at harvest</div></div>
+    <div class="tile"><div class="k">Peak viable cells</div><div class="v">${fmt(r.peakX,2)}<small>&times;10⁶/mL</small></div><div class="d">on ${dayStr(r.tPeak)}</div></div>
+    <div class="tile"><div class="k">Oxygen ceiling</div><div class="v">${fmt(r.xO2,1)}<small>&times;10⁶/mL</small></div><div class="d">k<sub>L</sub>a&middot;C* / q<sub>O₂</sub></div></div>
+    <div class="tile"><div class="k">Lowest dissolved O₂</div><div class="v">${fmt(r.minDO*100,0)}<small>%</small></div><div class="d">on ${dayStr(r.tMinDO)}</div></div>
+    <div class="tile"><div class="k">Productivity</div><div class="v">${fmt(r.qpPgDay,1)}<small>pg/cell/day</small></div><div class="d">${CLONES[p.clone].name}</div></div>
+    <div class="tile"><div class="k">Viable at harvest</div><div class="v">${fmt(r.viableEnd,2)}<small>&times;10⁶/mL</small></div><div class="d">${fmt(r.viableEnd/r.peakX*100,0)}% of peak</div></div>`;
+  $('#res-meta').textContent=fmt(p.days,1)+'-day batch';
+  const c0=Math.min(10, Math.max(1, r.titer));
+  $('#send').innerHTML=`<a class="btn primary small" href="protein-a-capture.html?C0=${c0.toFixed(2)}">Load ${fmt(c0,2)} g/L into Protein A capture &rarr;</a><span>${r.titer<1?'Titer below 1 g/L is raised to the capture page’s 1 g/L minimum.':r.titer>10?'Capped at the capture page’s 10 g/L maximum.':'Becomes the feed titer C₀ on step 3.'}</span>`;
+}
+
+function drawBudget(p, r){
+  const frac=r.peakOUR/r.otrMax;
+  $('#budget').innerHTML=`
+    <p style="margin:0 0 6px">At peak, the cells need <b>${sig(r.peakOUR,3)} mmol O₂/L/h</b>. The bubbles can supply at most <b>${sig(r.otrMax,3)}</b> (k<sub>L</sub>a &times; C*, when the liquid is drained to zero).</p>
+    <div class="bar" aria-label="oxygen demand as a share of maximum supply"><i class="${frac>0.9?'over':''}" style="width:${Math.min(100,frac*100).toFixed(1)}%"></i></div>
+    <div class="bar-l"><span>demand ${fmt(frac*100,0)}% of max supply</span><span>100%</span></div>
+    <p style="margin:8px 0 0; font-size:12.3px; color:var(--muted)">Above about 90% the liquid is nearly out of oxygen and growth slows. This is the reason big tanks are hard: k<sub>L</sub>a gets harder to raise as the tank grows.</p>`;
+}
+
+function drawChecks(p, r){
+  $('#checks').innerHTML='<tr><th>Published</th><th></th><th class="num">Value</th><th class="num">Model</th></tr>'+CHECKS.map(c=>{
+    const m=r[c.key];
+    return `<tr><td>${esc(c.label)}<div class="d">${srcLink(c.src)}</div></td><td><span class="pill ${c.kind==='fit'?'fit':c.kind==='input'?'lit':'chk'}">${c.kind}</span></td><td class="num">${fmt(c.value,1)} ${c.unit}</td><td class="num">${sig(m,3)}</td></tr>`;
+  }).join('');
+}
+
+function drawDays(p, r){
+  const s=r.sim, rows=[];
+  for(let d=0; d<=Math.floor(p.days); d++){
+    let i=0; for(let j=0;j<s.t.length;j++) if(Math.abs(s.t[j]-d*24)<Math.abs(s.t[i]-d*24)) i=j;
+    rows.push(`<tr><td>${d}</td><td class="num">${fmt(s.X[i],2)}</td><td class="num">${fmt(s.S[i],2)}</td><td class="num">${fmt(s.C[i]/p.Cstar*100,0)}</td><td class="num">${sig(s.P[i],3)}</td></tr>`);
+  }
+  $('#day-table').innerHTML='<tr><th>Day</th><th class="num">Cells 10⁶/mL</th><th class="num">Glucose g/L</th><th class="num">DO %</th><th class="num">Titer g/L</th></tr>'+rows.join('');
+}
+
+function drawSteps(p, r){
+  const mu0=p.muMax*p.S0/(p.Ks+p.S0);
+  $('#steps').innerHTML=`
+  <div class="st"><div><h3>Growth: the Monod equation</h3>
+    <p>Cells grow faster with more glucose, up to a top speed. Oxygen enters the same way, so growth slows if either runs low:</p>
+    <div class="eq">&mu; = &mu;<sub>max</sub> &middot; S/(K<sub>s</sub> + S) &middot; C/(K<sub>O₂</sub> + C)</div>
+    <div class="eq">day 0: &mu; = ${sig(p.muMax,3)} &times; ${fmt(p.S0,1)}/(${fmt(p.Ks,2)} + ${fmt(p.S0,1)}) &times; ${fmt(p.Cstar,2)}/(${p.KO2} + ${fmt(p.Cstar,2)}) = <span class="live">${sig(mu0*p.Cstar/(p.KO2+p.Cstar),3)} h⁻¹</span> &rarr; doubling every <span class="live">${fmt(r.td,1)} h</span></div>
+    <p>&mu;<sub>max</sub> = ln 2 / ${fmt(Math.LN2/p.muMax,1)} h. Same curve shape as the Langmuir isotherm on the Protein A page.</p></div></div>
+  <div class="st"><div><h3>Cell balance</h3>
+    <div class="eq">dX/dt = (&mu; &minus; k<sub>d</sub>) X, &nbsp; k<sub>d</sub> = ${p.kd0} + ${fmt(p.kdStarve,3)} &middot; K<sub>s</sub>/(K<sub>s</sub> + S)</div>
+    <p>Cells die slowly all the time and much faster once glucose is gone. X is in 10⁶ cells/mL.</p></div></div>
+  <div class="st"><div><h3>Glucose balance</h3>
+    <div class="eq">dS/dt = &minus;&mu; X / Y<sub>X/S</sub></div>
+    <p>Every new 10⁶ cells/mL eats ${fmt(1/p.Yxs,2)} g/L of glucose. Starting with ${fmt(p.S0,1)} g/L, the most cells you could ever make is X<sub>0</sub> + Y&middot;S<sub>0</sub> = <b>${fmt(p.X0+p.Yxs*p.S0,2)} &times;10⁶/mL</b>.</p></div></div>
+  <div class="st"><div><h3>Oxygen balance (ECH 3264 mass transfer)</h3>
+    <p>Accumulation = transfer in from bubbles &minus; uptake by cells:</p>
+    <div class="eq">dC/dt = k<sub>L</sub>a (C* &minus; C) &minus; q<sub>O₂</sub> X</div>
+    <div class="eq">ceiling: k<sub>L</sub>a C* / q<sub>O₂</sub> = ${fmt(p.kLa,1)} h⁻¹ &times; ${fmt(p.Cstar,2)} mM / (${fmt(p.qO2*1e10,1)}&times;10⁻¹⁰ mmol/cell/h &times; 10⁹ mL→L) = <span class="live">${fmt(r.xO2,2)} &times;10⁶ cells/mL</span></div>
+    <p>q<sub>O₂</sub>X is per cell, so cells/mL becomes cells/L (&times;1000) to match mmol/L. The ceiling is the cell density at which demand equals the most the bubbles can give.</p></div></div>
+  <div class="st"><div><h3>Antibody: Luedeking&ndash;Piret</h3>
+    <div class="eq">dP/dt = &alpha; &mu; X + &beta; X &nbsp;&nbsp; (&alpha; = ${sig(p.alpha*1e6,3)} pg/cell, &beta; = ${sig(p.beta*1e6,3)} pg/cell/h)</div>
+    <p>&beta; = ${fmt(r.qpPgDay,1)} pg per cell per day. One IgG weighs 150,000 g/mol, so each living cell secretes about <span class="live">${fmt(r.moleculesPerSec,0)} antibody molecules per second</span>.</p></div></div>
+  <div class="st"><div><h3>Solve</h3>
+    <p>The four equations are stepped forward together with RK4 every ${sig(r.sim.dt*60,2)} minutes for ${fmt(p.days,1)} days. The step is kept under 0.2/k<sub>L</sub>a because oxygen reacts in minutes while cells take days.</p></div></div>`;
+}
+
+function drawParams(p, r){
+  const c=CLONES[p.clone];
+  const rows=[
+    ['&mu;<sub>max</sub>', sig(p.muMax,3), 'h⁻¹', 'lit', srcLink('ihling')+': doubling about 20 h → ln 2/20'],
+    ['K<sub>s</sub>', fmt(p.Ks,2), 'g/L', 'asm', 'Not given in the sources read'],
+    ['K<sub>O₂</sub>', p.KO2, 'mM', 'asm', 'About 2% of air saturation'],
+    ['Y<sub>X/S</sub>', fmt(p.Yxs,2), '10⁶ cells/mL per g/L', 'lit', srcLink('lopez')+' range 0.72–2.79 (units read as per g/L)'],
+    ['k<sub>d</sub> background', p.kd0, 'h⁻¹', 'asm', 'Small death rate while fed'],
+    ['k<sub>d</sub> starvation', fmt(p.kdStarve,3), 'h⁻¹', 'asm', 'Extra death once glucose is gone'],
+    ['q<sub>O₂</sub>', fmt(p.qO2*1e10,1)+'×10⁻¹⁰', 'mmol/cell/h', 'lit', srcLink('chaudhry')+' range 2–8'],
+    ['k<sub>L</sub>a', fmt(p.kLa,1), 'h⁻¹', 'lit', srcLink('ihling')+': shake flasks 8–42'],
+    ['C*', fmt(p.Cstar,2), 'mM', 'lit', srcLink('chaudhry')+' (0.21); '+srcLink('ihling')+' (0.22)'],
+    ['X<sub>0</sub>', fmt(p.X0,2), '10⁶ cells/mL', 'lit', srcLink('zalai')+' seeded at 0.5'],
+    ['S<sub>0</sub>', fmt(p.S0,1), 'g/L', 'lit', srcLink('lopez')+' studied 1.2–4.8'],
+    ['&alpha;', sig(p.alpha*1e6,3), 'pg/cell', c.src==='fit'?'asm':'lit', c.src==='fit'?'Set to 0 for this clone':srcLink('lopez')],
+    ['&beta;', sig(p.beta*1e6,3), 'pg/cell/h', c.src==='fit'?'fit':'lit', c.src==='fit'?esc(SOURCES.fit.cite):srcLink('lopez')],
+  ];
+  const tag={lit:'source', asm:'assumed', fit:'fitted'};
+  $('#param-table').innerHTML='<tr><th>Symbol</th><th class="num">Value</th><th>Unit</th><th></th><th>Where it comes from</th></tr>'+
+    rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td>${r[2]}</td><td><span class="pill ${r[3]}">${tag[r[3]]}</span></td><td>${r[4]}</td></tr>`).join('');
+}
+
+function buildRefs(){
+  $('#refs').innerHTML=Object.entries(SOURCES).filter(([k])=>k!=='assume'&&k!=='fit')
+    .map(([k,s])=>`<li>${esc(s.cite)}${s.url?` <a href="${s.url}" target="_blank" rel="noopener">link</a>`:''}</li>`).join('')
+    + '<li>Rego D. &amp; Rose A. 3Dmol.js: molecular visualization with WebGL. Bioinformatics 31:1322–1324 (2015). <a href="https://3dmol.org" target="_blank" rel="noopener">3dmol.org</a></li>';
+}
+
+/* ---------- 3D molecule ---------- */
+const MOL = {viewer:null, model:null, heavy:[], light:[], fc:{}};
+function cssColor(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function initViewer(){
+  const msg=$('#viewer-msg');
+  if(typeof $3Dmol==='undefined'){ msg.textContent='The 3D viewer library (3Dmol.js) could not load. Check your internet connection; the model and plots still work.'; return; }
+  try{ MOL.viewer=$3Dmol.createViewer($('#viewer'), {backgroundColor:'white', backgroundAlpha:0, antialias:true}); }
+  catch(e){ msg.textContent='3D needs WebGL, which this browser has turned off. The model and plots still work.'; return; }
+  $3Dmol.download('pdb:1HZH', MOL.viewer, {format:'pdb'}, function(model){
+    if(!model || !model.selectedAtoms({}).length){ msg.textContent='Could not download PDB 1HZH from rcsb.org. The model and plots still work.'; return; }
+    msg.remove(); MOL.model=model; findParts(model); styleMol();
+    MOL.viewer.resize(); MOL.viewer.zoomTo(); MOL.viewer.render();
+    MOL.viewer.setClickable({}, true, pick); MOL.viewer.render();
+  });
+}
+/* Heavy chains are the two longest protein chains, light chains the two shorter ones.
+   The Fc stem is taken as each heavy chain's residues after its last contact (5 Å) with a light chain. */
+function findParts(model){
+  const atoms=model.selectedAtoms({hetflag:false});
+  const res={}; for(const a of atoms){ (res[a.chain]=res[a.chain]||new Set()).add(a.resi); }
+  const chains=Object.keys(res).sort((a,b)=>res[b].size-res[a].size);
+  MOL.heavy=chains.slice(0,2); MOL.light=chains.slice(2,4);
+  const lightAtoms=atoms.filter(a=>MOL.light.includes(a.chain)), cut2=25;
+  for(const h of MOL.heavy){
+    let lastContact=-Infinity;
+    for(const a of atoms) if(a.chain===h && a.resi>lastContact){
+      for(const b of lightAtoms){ const dx=a.x-b.x, dy=a.y-b.y, dz=a.z-b.z; if(dx*dx+dy*dy+dz*dz<cut2){ lastContact=a.resi; break; } }
+    }
+    MOL.fc[h]=[...res[h]].filter(r=>r>lastContact).sort((a,b)=>a-b);
+  }
+  const nFc=MOL.heavy.reduce((s,h)=>s+MOL.fc[h].length,0);
+  $('#mol-caption').innerHTML+=` In this structure the page finds ${MOL.heavy.length} heavy chains (${MOL.heavy.map(h=>res[h].size).join(' and ')} residues) and ${MOL.light.length} light chains, with <b>${nFc} heavy-chain residues</b> past the last light-chain contact shown as the Fc stem (an estimate; the hinge is included).`;
+}
+function styleMol(){
+  if(!MOL.model) return;
+  const v=MOL.viewer; v.setStyle({}, {});
+  MOL.heavy.forEach((h,i)=>v.setStyle({chain:h, hetflag:false}, {cartoon:{color:cssColor(i?'--mol-hc2':'--mol-hc')}}));
+  MOL.light.forEach(l=>v.setStyle({chain:l, hetflag:false}, {cartoon:{color:cssColor('--mol-lc')}}));
+  if($('#t-fc').checked) MOL.heavy.forEach(h=>{ if(MOL.fc[h].length) v.setStyle({chain:h, resi:MOL.fc[h], hetflag:false}, {cartoon:{color:cssColor('--mol-fc')}}); });
+  if($('#t-gly').checked) v.addStyle({hetflag:true, resn:['NAG','MAN','BMA','FUC','GAL','NDG','FUL']}, {stick:{radius:0.22, color:cssColor('--mol-gly')}});
+  v.render();
+}
+function pick(atom){
+  const part = MOL.light.includes(atom.chain) ? 'light chain' : MOL.heavy.includes(atom.chain) ? ((MOL.fc[atom.chain]||[]).includes(atom.resi)?'heavy chain, Fc stem':'heavy chain, Fab arm') : atom.hetflag ? 'glycan' : 'other';
+  $('#picked').innerHTML=`<b>${esc(atom.resn)} ${atom.resi}</b> &middot; chain ${esc(atom.chain)}<br>${part}`;
+  MOL.viewer.removeAllLabels();
+  MOL.viewer.addLabel(`${atom.resn} ${atom.resi}`, {position:{x:atom.x,y:atom.y,z:atom.z}, backgroundColor:cssColor('--panel'), fontColor:cssColor('--ink'), borderColor:cssColor('--line'), borderThickness:1, fontSize:12, backgroundOpacity:0.92});
+  MOL.viewer.render();
+}
+function updateOverlay(r){
+  $('#occ').innerHTML=`Each living cell of this clone secretes about <b>${fmt(r.moleculesPerSec,0)}</b> of these molecules every second (${fmt(r.qpPgDay,1)} pg/cell/day).`;
+}
+
+/* ---------- theme ---------- */
+const THEMES=['auto','light','dark'];
+let themeMode='auto';
+try{ themeMode=localStorage.getItem('pax-theme')||'auto'; }catch(e){}
+function applyTheme(t){
+  themeMode=t;
+  if(t==='auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem('pax-theme', t); }catch(e){}
+  $('#btn-theme').title='Theme: '+t; styleMol();
+}
+
+/* ---------- wire up ---------- */
+buildClones(); syncSliders(); bindSliders(); buildRefs();
+$('#btn-reset').onclick=()=>{ Object.assign(state, DEFAULTS); syncSliders(); update(); };
+$('#btn-pin').onclick=()=>{ if(!last) return; pinned={sim:last.sim, days:state.days, p:Object.assign({},state), label:`kLa ${fmt(state.kLa,1)}, ${fmt(state.S0,1)} g/L, ${fmt(state.X0,2)}×10⁶`}; $('#btn-pin').textContent='Re-pin'; update(); };
+$('#btn-theme').onclick=()=>applyTheme(THEMES[(THEMES.indexOf(themeMode)+1)%3]);
+['#t-fc','#t-gly'].forEach(id=>$(id).addEventListener('change', styleMol));
+$('#t-spin').addEventListener('change', e=>{ if(MOL.viewer) MOL.viewer.spin(e.target.checked?'y':false); });
+$('#btn-view').onclick=()=>{ if(MOL.viewer){ MOL.viewer.removeAllLabels(); MOL.viewer.zoomTo(); MOL.viewer.render(); } };
+window.addEventListener('resize', ()=>{ if(MOL.viewer){ MOL.viewer.resize(); MOL.viewer.render(); } });
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', styleMol);
+applyTheme(themeMode);
+update();
+initViewer();
+</script>
+</body>
+</html>
