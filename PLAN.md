@@ -15,6 +15,21 @@ Goal: a polished public site where a student clicks through an antibody plant an
 - [ ] **Preston:** read every number in the parameter table against the two Cytiva PDFs yourself
 - [ ] Publish with GitHub Pages
 
+## Milestone 2: Bioreactor
+
+- [x] `bioreactor.html`: Monod growth on glucose and O₂, death, glucose and O₂ balances, Luedeking–Piret antibody
+- [x] k<sub>L</sub>a slider, oxygen ceiling line, oxygen budget bar, low-DO warning
+- [x] Four synced small-multiple plots, pin-a-run comparison, day-by-day table
+- [x] Two cell lines: published research clone, production clone fitted to 1 g/L
+- [x] 3D IgG1 from CHO cells (1HZH), chains colored, Fc stem estimated, glycans
+- [x] Pages linked; titer hand-off to Protein A capture
+- [x] Node test suite (70 checks)
+- [ ] **Preston:** confirm 1HZH loads and the orange Fc stem lands on the stem, not an arm (tested here only with a stand-in file)
+- [ ] Check López-Meza 2016 yield units (abstract prints cells/mL; the page reads it as per g/L glucose) and the journal volume
+- [ ] Find a cited K<sub>s</sub> for glucose and a death-rate value (both assumed now)
+
+Next for this page: fed-batch feeding, a DO controller, lactate, and k<sub>L</sub>a from stirring and gas flow (van't Riet correlation, checking its valid range first).
+
 ## Open questions to check
 
 - Cytiva Table 3 does not print units for K<sub>d</sub>. The page reads them as mg/mL. Confirm.
@@ -32,7 +47,7 @@ Goal: a polished public site where a student clicks through an antibody plant an
 
 ## Later pages (Concept A roadmap)
 
-1. Bioreactor (CHO cells, growth and titer)
+1. **Bioreactor** (done: batch growth, oxygen, titer)
 2. Harvest (centrifuge, depth filter)
 3. **Protein A capture** (done)
 4. Low-pH viral inactivation
